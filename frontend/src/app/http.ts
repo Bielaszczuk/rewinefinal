@@ -149,7 +149,10 @@ http.interceptors.response.use(
     const hasNotRetried = !originalRequest._retry
     const hasRefreshHandler = !!refreshTokenHandler
 
-    if (isUnauthorized && hasNotRetried && hasRefreshHandler) {
+    // Don't try to refresh token for auth endpoints (login, register, etc.)
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/')
+
+    if (isUnauthorized && hasNotRetried && hasRefreshHandler && !isAuthEndpoint) {
       originalRequest._retry = true
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1
 

@@ -35,11 +35,11 @@ export class AuthApiError extends Error {
   public readonly statusCode: number
   public readonly isSessionExpired: boolean
 
-  constructor(message: string, statusCode: number = 500) {
+  constructor(message: string, statusCode: number = 500, isSessionExpired: boolean = false) {
     super(message)
     this.name = 'AuthApiError'
     this.statusCode = statusCode
-    this.isSessionExpired = statusCode === 401
+    this.isSessionExpired = isSessionExpired
   }
 }
 
@@ -88,15 +88,20 @@ export const authService = {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status ?? 0
         const data = error.response?.data as Record<string, unknown> | undefined
+
+        if (status === 401) {
+          throw new AuthApiError('Invalid email or password', 401, false)
+        }
+
         const message = (data?.message as string) || (data?.error as string) || 'Login failed'
 
         if (status === 422 && data?.errors) {
           const backendErrors = data.errors as Record<string, string[]>
           throw new AuthValidationError(message, backendErrors)
         }
-        throw new AuthApiError(message, status)
+        throw new AuthApiError(message, status, false)
       }
-      throw new AuthApiError('Network error. Please check your connection.', 0)
+      throw new AuthApiError('Network error. Please check your connection.', 0, false)
     }
   },
 
@@ -178,7 +183,7 @@ export const authService = {
     try {
       await authClient.logout()
     } catch {
-
+      // Ignore logout errors - user is logging out anyway
     }
   },
 

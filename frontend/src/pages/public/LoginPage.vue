@@ -86,8 +86,11 @@ async function handleSubmit() {
     toast.success(t('auth.loginSuccess'))
     router.push(returnUrl)
   } catch {
-
-    toast.error(generalError.value || t('auth.loginError'))
+    // Show appropriate error message
+    const errorMessage = generalError.value?.includes('Invalid')
+      ? t('auth.invalidCredentials')
+      : (generalError.value || t('auth.loginError'))
+    toast.error(errorMessage)
   }
 }
 
