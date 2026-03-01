@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rewine-uat
+
+resources:
+  - ../../base
+
+namePrefix: uat-
+
+commonLabels:
+  environment: uat
+
+# Patches for UAT environment
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: rewine-backend
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1000m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+    target:
+      kind: Deployment
+      name: rewine-backend
+
+configMapGenerator:
+  - name: rewine-backend-config
+    behavior: merge
+    literals:
+      - LOGGING_LEVEL_COM_REWINE=INFO
+      - SPRING_JPA_SHOW_SQL=false
+      # OTEL UAT settings (higher sampling for testing)
+      - OTEL_ENABLED=false
+      - OTEL_SERVICE_NAME=rewine-backend
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=rewine,deployment.environment=uat
+      - OTEL_TRACES_SAMPLER=parentbased_traceidratio
+      - OTEL_TRACES_SAMPLER_ARG=0.5
+
